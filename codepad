@@ -1,0 +1,30 @@
+#!/usr/bin/php -f
+<?php
+
+$code = '';
+while( !feof( STDIN ) ) {
+	$code .= fgets( STDIN );
+}
+
+$request = curl_init();
+
+curl_setopt_array( $request, array(
+	CURLOPT_URL => 'http://codepad.org/',
+	CURLOPT_POST => true,
+	CURLOPT_POSTFIELDS => array(
+		'lang'   => 'Plain Text',
+		'code'   => $code,
+		'submit' => true, ),
+	CURLOPT_FOLLOWLOCATION => true,
+	CURLOPT_RETURNTRANSFER => true, )
+);
+
+if( curl_exec( $request ) === false ) {
+	throw new Exception( 'an unexpected curl error occured: (' . curl_errno( $request ) .
+		') ' . curl_error( $request ) );
+	exit( 1 );
+}
+
+echo curl_getinfo( $request, CURLINFO_EFFECTIVE_URL ), PHP_EOL;
+
+curl_close( $request );
