@@ -1,22 +1,102 @@
 #!/usr/bin/php -f
 <?php
 
-$code = '';
-while( !feof( STDIN ) ) {
-	$code .= fgets( STDIN );
+if( isset( $_SERVER['SERVER_ADDR'] ) || isset( $_SERVER['REMOTE_ADDR'] ) ) {
+	echo 'this script can only be run from the command line', PHP_EOL;
+	exit( 1 );
 }
 
+/**
+ * c = C;  c++,cpp = C++;  d = D;  haskell,hs = Haskell;  lua = Lua; ocaml = OCaml;
+ * php = PHP;  perl,pl = Perl;  plain-text,plain,text = Plain Text;  python,py = Python;
+ * ruby,rb = Ruby;  scheme,scm = Scheme;  tcl = Tcl
+ */
+
+$allowed_langs = array(
+	'c'          => 'C',
+	'c++'        => 'C++',
+	'cpp'        => 'C++',
+	'd'          => 'D',
+	'haskell'    => 'Haskell',
+	'hs'         => 'Haskell',
+	'lua'        => 'Lua',
+	'ocaml'      => 'OCaml',
+	'php'        => 'PHP',
+	'perl'       => 'Perl',
+	'pl'         => 'Perl',
+	'plain-text' => 'Plain Text',
+	'plain'      => 'Plain Text',
+	'text'       => 'Plain Text',
+	'python'     => 'Python',
+	'py'         => 'Python',
+	'ruby'       => 'Ruby',
+	'rb'         => 'Ruby',
+	'scheme'     => 'Scheme',
+	'scm'        => 'Scheme',
+	'tcl'        => 'Tcl',
+);
+
+$opts = array(
+	'lang'    => $allowed_langs['plain'],
+	'code'    => null,
+	'private' => null,
+	'run'     => null,
+);
+
+array_shift( $argv );
+while( count( $argv ) > 0 ) {
+	switch( $argv[0] ) {
+	case '-l':
+	case '--language':
+		array_shift( $argv );
+		$language = strtolower( array_shift( $argv ) );
+		if( isset( $allowed_langs[$language] ) ) {
+			$opts['lang'] = $allowed_langs[$language];
+		}
+		break;
+	case '-p':
+	case '--private':
+		array_shift( $argv );
+		$opts['private'] = 'True';
+		break;
+	case '-r':
+	case '--run':
+		array_shift( $argv );
+		$opts['run'] = 'True';
+		break;
+	case '-h':
+	case '--help':
+		usage();
+		exit( 0 );
+	default:
+		$opts['file'] = array_shift( $argv );
+		break;
+	}
+}
+
+// Load code
+if( isset( $opts['file'] ) && file_exists( $opts['file'] ) ) {
+	// From file, if exists
+	$opts['code'] = file_get_contents( $opts['file'] );
+	unset( $opts['file'] );
+} else {
+	// Or from STDIN
+	while( !feof( STDIN ) ) {
+		$opts['code'] .= fgets( STDIN );
+	}
+}
+
+// Make POST request to codepad with supplied data
 $request = curl_init();
 
 curl_setopt_array( $request, array(
 	CURLOPT_URL => 'http://codepad.org/',
 	CURLOPT_POST => true,
-	CURLOPT_POSTFIELDS => array(
-		'lang'   => 'Plain Text',
-		'code'   => $code,
-		'submit' => true, ),
+	CURLOPT_POSTFIELDS => http_build_query( array_merge( $opts, array(
+		'submit' => 'Submit', ) ) ),
 	CURLOPT_FOLLOWLOCATION => true,
-	CURLOPT_RETURNTRANSFER => true, )
+	CURLOPT_RETURNTRANSFER => true,
+	CURLOPT_USERAGENT => 'github.com/mgrabovsky/codepadize-php' )
 );
 
 if( curl_exec( $request ) === false ) {
@@ -25,6 +105,23 @@ if( curl_exec( $request ) === false ) {
 	exit( 1 );
 }
 
+// Print where we've been redirected to -- the paste URL
 echo curl_getinfo( $request, CURLINFO_EFFECTIVE_URL ), PHP_EOL;
 
 curl_close( $request );
+
+function usage() {
+	echo <<<TERM
+usage: codepad [-l|--language <language>] [-p|--private] [-r|--run] [<file>]
+       codepad -h|--help
+
+  -l, --language <language> syntax highlight and eventually run the code
+                              in this language
+  -p, --private             make the paste private
+  -r, --run                 run the code after submitting
+  <file>                    submit code from this file
+  -h, --help                show this help message
+
+  if no file name is supplied, code will be read from STDIN until EOF
+TERM;
+}
