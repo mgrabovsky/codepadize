@@ -6,7 +6,7 @@ if( isset( $_SERVER['SERVER_ADDR'] ) || isset( $_SERVER['REMOTE_ADDR'] ) ) {
 }
 
 $opts = array(
-	'lang'    => languages::get_lang('plain'),
+	'lang'    => null,
 	'code'    => null,
 	'private' => null,
 	'run'     => null,
@@ -54,6 +54,11 @@ if( isset( $opts['file'] ) && $opts['file'] !== '-' && file_exists( $opts['file'
 	}
 }
 if( isset( $opts['file'] ) ) unset( $opts['file'] );
+
+// If language wasn't set by user, set it to plaint text
+// In future we might check file extension, maybe opening token, etc.
+if( !isset( $opts['lang'] ) )
+	$opts['lang'] = languages::get_lang( 'plain-text' );
 
 // Make POST request to codepad with supplied data
 $request = curl_init();
