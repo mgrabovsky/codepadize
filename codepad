@@ -6,38 +6,8 @@ if( isset( $_SERVER['SERVER_ADDR'] ) || isset( $_SERVER['REMOTE_ADDR'] ) ) {
 	exit( 1 );
 }
 
-/**
- * c = C;  c++,cpp = C++;  d = D;  haskell,hs = Haskell;  lua = Lua; ocaml = OCaml;
- * php = PHP;  perl,pl = Perl;  plain-text,plain,text = Plain Text;  python,py = Python;
- * ruby,rb = Ruby;  scheme,scm = Scheme;  tcl = Tcl
- */
-
-$allowed_langs = array(
-	'c'          => 'C',
-	'c++'        => 'C++',
-	'cpp'        => 'C++',
-	'd'          => 'D',
-	'haskell'    => 'Haskell',
-	'hs'         => 'Haskell',
-	'lua'        => 'Lua',
-	'ocaml'      => 'OCaml',
-	'php'        => 'PHP',
-	'perl'       => 'Perl',
-	'pl'         => 'Perl',
-	'plain-text' => 'Plain Text',
-	'plain'      => 'Plain Text',
-	'text'       => 'Plain Text',
-	'python'     => 'Python',
-	'py'         => 'Python',
-	'ruby'       => 'Ruby',
-	'rb'         => 'Ruby',
-	'scheme'     => 'Scheme',
-	'scm'        => 'Scheme',
-	'tcl'        => 'Tcl',
-);
-
 $opts = array(
-	'lang'    => $allowed_langs['plain'],
+	'lang'    => languages::get_lang('plain'),
 	'code'    => null,
 	'private' => null,
 	'run'     => null,
@@ -49,9 +19,9 @@ while( count( $argv ) > 0 ) {
 	case '-l':
 	case '--language':
 		array_shift( $argv );
-		$language = strtolower( array_shift( $argv ) );
-		if( isset( $allowed_langs[$language] ) ) {
-			$opts['lang'] = $allowed_langs[$language];
+		$language = languages::get_lang( array_shift( $argv ) );
+		if( !is_null( $language ) ) {
+			$opts['lang'] = $language;
 		}
 		break;
 	case '-p':
@@ -112,16 +82,42 @@ curl_close( $request );
 
 function usage() {
 	echo <<<TERM
-usage: codepad [-l|--language <language>] [-p|--private] [-r|--run] [<file>]
+Usage: codepad [-l|--language <language>] [-p|--private] [-r|--run] [<file>]
        codepad -h|--help
 
-  -l, --language <language> syntax highlight and eventually run the code
-                              in this language
-  -p, --private             make the paste private
-  -r, --run                 run the code after submitting
-  <file>                    submit code from this file
-  -h, --help                show this help message
+  -l, --language <language> Syntax highlight and eventually run the code
+                              in specified language
+  -p, --private             Make the paste private
+  -r, --run                 Run the code after submitting
+  <file>                    Submit code from specified file
+  -h, --help                Show this help message
 
-  if no file name is supplied, code will be read from STDIN until EOF
+  If no file name is supplied, code will be read from STDIN until EOF
 TERM;
+}
+
+class languages {
+	public static function get_lang( $code ) {
+		static $languages = array(
+			array( 'C',          array( 'c' ) ),
+			array( 'C++',        array( 'c++', 'cpp' ) ),
+			array( 'D',          array( 'd' ) ),
+			array( 'Haskell',    array( 'haskell', 'hs' ) ),
+			array( 'Lua',        array( 'lua' ) ),
+			array( 'OCaml',      array( 'ocaml' ) ),
+			array( 'PHP',        array( 'php' ) ),
+			array( 'Perl',       array( 'perl', 'pl' ) ),
+			array( 'Plain Text', array( 'plain-text', 'plain', 'text' ) ),
+			array( 'Python',     array( 'python', 'py' ) ),
+			array( 'Ruby',       array( 'ruby', 'rb' ) ),
+			array( 'Scheme',     array( 'scheme', 'scm' ) ),
+			array( 'Tcl',        array( 'tcl' ) ), );
+
+			foreach( $languages as $language ) {
+				if( in_array( strtolower( $code ), $language[1] ) )
+					return $language[0];
+			}
+
+			return null;
+	}
 }
