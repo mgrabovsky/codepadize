@@ -1,4 +1,3 @@
-#!/usr/bin/php -f
 <?php
 
 if( isset( $_SERVER['SERVER_ADDR'] ) || isset( $_SERVER['REMOTE_ADDR'] ) ) {
@@ -15,7 +14,7 @@ $opts = array(
 
 array_shift( $argv );
 while( count( $argv ) > 0 ) {
-	switch( $argv[0] ) {
+	switch( strtolower( $argv[0] ) ) {
 	case '-l':
 	case '--language':
 		array_shift( $argv );
@@ -45,16 +44,16 @@ while( count( $argv ) > 0 ) {
 }
 
 // Load code
-if( isset( $opts['file'] ) && file_exists( $opts['file'] ) ) {
+if( isset( $opts['file'] ) && $opts['file'] !== '-' && file_exists( $opts['file'] ) ) {
 	// From file, if exists
 	$opts['code'] = file_get_contents( $opts['file'] );
-	unset( $opts['file'] );
 } else {
 	// Or from STDIN
 	while( !feof( STDIN ) ) {
 		$opts['code'] .= fgets( STDIN );
 	}
 }
+if( isset( $opts['file'] ) ) unset( $opts['file'] );
 
 // Make POST request to codepad with supplied data
 $request = curl_init();
@@ -87,35 +86,39 @@ Usage: codepad [-l|--language <language>] [-p|--private] [-r|--run] [<file>]
 
   -l, --language <language> Syntax highlight and eventually run the code
                               in specified language
+  -h, --help                Show this help message
   -p, --private             Make the paste private
   -r, --run                 Run the code after submitting
   <file>                    Submit code from specified file
-  -h, --help                Show this help message
 
-  If no file name is supplied, code will be read from STDIN until EOF
+  If file name is -, is not supplied or file does not exist, code will be
+    read from STDIN until EOF
 TERM;
 }
 
 class languages {
-	public static function get_lang( $code ) {
-		static $languages = array(
-			array( 'C',          array( 'c' ) ),
-			array( 'C++',        array( 'c++', 'cpp' ) ),
-			array( 'D',          array( 'd' ) ),
-			array( 'Haskell',    array( 'haskell', 'hs' ) ),
-			array( 'Lua',        array( 'lua' ) ),
-			array( 'OCaml',      array( 'ocaml' ) ),
-			array( 'PHP',        array( 'php' ) ),
-			array( 'Perl',       array( 'perl', 'pl' ) ),
-			array( 'Plain Text', array( 'plain-text', 'plain', 'text' ) ),
-			array( 'Python',     array( 'python', 'py' ) ),
-			array( 'Ruby',       array( 'ruby', 'rb' ) ),
-			array( 'Scheme',     array( 'scheme', 'scm' ) ),
-			array( 'Tcl',        array( 'tcl' ) ), );
+	static $languages = array(
+		array( 'C',          array() ),
+		array( 'C++',        array( 'cpp' ) ),
+		array( 'D',          array() ),
+		array( 'Haskell',    array( 'hs' ) ),
+		array( 'Lua',        array() ),
+		array( 'OCaml',      array() ),
+		array( 'PHP',        array() ),
+		array( 'Perl',       array( 'pl' ) ),
+		array( 'Plain Text', array( 'plain-text', 'plain', 'text' ) ),
+		array( 'Python',     array( 'py' ) ),
+		array( 'Ruby',       array( 'rb' ) ),
+		array( 'Scheme',     array( 'scm' ) ),
+		array( 'Tcl',        array() ), );
 
-			foreach( $languages as $language ) {
-				if( in_array( strtolower( $code ), $language[1] ) )
+	public static function get_lang( $code ) {
+			foreach( self::$languages as $language ) {
+				if( in_array( strtolower( $code ), $language[1] ) ||
+					strcasecmp( $code, $language[0] ) == 0 )
+				{
 					return $language[0];
+				}
 			}
 
 			return null;
