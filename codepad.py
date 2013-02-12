@@ -1,5 +1,4 @@
 import sys, argparse
-import operator as op
 import requests
 
 languages = [
@@ -31,6 +30,7 @@ parser.add_argument('-r', '--run', action='store_true', default='',
 
 args = parser.parse_args()
 
+# Find what language to send to the server or default to plain text
 language = args.language.lower()
 for syn in languages:
 	if language == syn[0].lower() or language in syn[1]:
@@ -50,4 +50,3 @@ for f in args.files:
 
 	r = requests.post('http://codepad.org/', data=payload)
 	print r.url
-
