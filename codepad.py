@@ -50,3 +50,4 @@ for f in args.files:
 
 	r = requests.post('http://codepad.org/', data=payload)
 	print r.url
+
