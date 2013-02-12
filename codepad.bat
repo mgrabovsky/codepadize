@@ -1,2 +1,2 @@
 @ECHO OFF
-"%PHPRC%php" -f "%~dp0%\%codepad.php" -- %*
+python "%~dp0%\%codepad.py" %*
